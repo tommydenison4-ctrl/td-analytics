@@ -172,22 +172,21 @@
 
         .hero{
   position:relative;
-  position:relative;
-      background:linear-gradient(180deg, var(--panel), var(--panel2));
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:14px 16px;
-      box-shadow:0 8px 18px var(--shadow);
-    }
+  background:linear-gradient(180deg, var(--panel), var(--panel2));
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:10px 12px;
+  box-shadow:0 8px 18px var(--shadow);
+  min-height:104px;
+}
     .hero-watermark{
   position:absolute;
   left:50%;
-  top:50%;
-  transform:translate(-50%, -50%) rotate(-12deg);
-  width:220px;
-  height:220px;
-  opacity:.045;
-  filter: blur(0.4px);
+  bottom:12px;
+  transform:translateX(-50%);
+  width:170px;
+  height:170px;
+  opacity:.04;
   pointer-events:none;
   z-index:0;
   display:flex;
@@ -204,11 +203,18 @@
     .hero-logo{
   position:relative;
   z-index:2;
-      width:76px;height:76px;flex:0 0 76px;border-radius:18px;
-      overflow:hidden;border:2px solid color-mix(in srgb, var(--accent-2) 65%, var(--line));
-      background:linear-gradient(180deg,#fff,color-mix(in srgb, var(--accent-2) 18%, #fff));display:flex;align-items:center;justify-content:center;
-      box-shadow:0 6px 18px rgba(0,0,0,.25)
-    }
+  width:64px;
+  height:64px;
+  flex:0 0 64px;
+  border-radius:16px;
+  overflow:hidden;
+  border:2px solid color-mix(in srgb, var(--accent-2) 65%, var(--line));
+  background:linear-gradient(180deg,#fff,color-mix(in srgb, var(--accent-2) 18%, #fff));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+}
     .hero-logo svg{width:100%;height:100%;display:block}
     .hero-logo img{
       width:100%;
@@ -225,13 +231,103 @@
       align-items:center;
       justify-content:center;
     }
-    .hero h2{margin:0;font-size:26px}
-    .hero .meta{margin-top:6px;color:var(--muted);font-size:14px}
+    .hero h2{margin:0;font-size:24px;line-height:1.1}
+    .hero .meta{margin-top:4px;color:var(--muted);font-size:13px}
     .hero .code{
+  margin-top:6px;
       display:inline-block;margin-top:8px;padding:6px 10px;border-radius:999px;
       background:color-mix(in srgb, var(--panel2) 90%, var(--accent) 10%);
       border:1px solid var(--line);font-size:12px;color:var(--text)
     }
+
+    .topbar-actions{display:flex;justify-content:flex-end;margin:0 0 12px}
+    .print-btn{
+      background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 58%, var(--panel)), color-mix(in srgb, var(--accent) 32%, var(--panel2)));
+      color:var(--text);
+      border:1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(0,0,0,.18);
+    }
+    .print-btn:hover{filter:brightness(1.08)}
+    @media print{
+      @page{size:landscape;margin:0.4in}
+      body{
+        background:#fff !important;
+        color:#111 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      header{
+        position:static !important;
+        box-shadow:none !important;
+        backdrop-filter:none !important;
+        background:#fff !important;
+        border-bottom:2px solid #bbb !important;
+      }
+      .sub,.tabs,.controls,.topbar-actions,.print-hide{
+        display:none !important;
+      }
+      .wrap{padding:0 !important}
+      .tabpage.hidden{display:none !important}
+      .tabpage:not(.hidden){display:block !important}
+      .hero,.panel,.kpi{
+        box-shadow:none !important;
+      }
+      .hero{
+  position:relative;
+  background:linear-gradient(180deg, var(--panel), var(--panel2));
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:10px 12px;
+  box-shadow:0 8px 18px var(--shadow);
+  min-height:104px;
+}
+      .hero-watermark{
+  position:absolute;
+  left:50%;
+  bottom:12px;
+  transform:translateX(-50%);
+  width:170px;
+  height:170px;
+  opacity:.04;
+  pointer-events:none;
+  z-index:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+      .panel{
+        border:1px solid #cfcfcf !important;
+        background:#fff !important;
+        page-break-inside:avoid;
+      }
+      .kpi{
+        border:1px solid #d8d8d8 !important;
+        background:#fff !important;
+      }
+      table, tr, td, th{
+        color:#111 !important;
+      }
+      th,td{
+        border-bottom:1px solid #d8d8d8 !important;
+      }
+      .two-col{
+        grid-template-columns:1.4fr 1fr !important;
+      }
+      select,input{
+        display:none !important;
+      }
+      h1,h2,.section-title{
+        color:#111 !important;
+      }
+      .note,.small,.meta{
+        color:#444 !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -241,6 +337,7 @@
 </header>
 
 <div class="wrap">
+  <div class="topbar-actions"><button class="print-btn" onclick="window.print()">Export PDF</button></div>
   <div class="tabs">
     <button class="tab active" data-tab="defense">Defense</button>
     <button class="tab" data-tab="offense">Offense</button>
@@ -912,6 +1009,13 @@ function init(){
   refreshDefense(); refreshOffense(); refreshPlayers(); refreshZones(); refreshDefenseAttack();
   applyActiveTeamTheme();
 }
+
+
+window.addEventListener('beforeprint', () => {
+  const active = document.querySelector('.tab.active')?.textContent?.trim() || 'Report';
+  const heroTitle = document.querySelector('.tabpage:not(.hidden) .hero h2')?.textContent?.trim() || 'LM Analytics';
+  document.title = `${heroTitle} - ${active} Report`;
+});
 
 init();
 </script>
