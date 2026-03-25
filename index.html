@@ -922,6 +922,48 @@
   justify-content:center;
 }
 
+
+    .off-zone-pill{
+      position:relative;
+      padding-left:12px;
+      font-weight:700;
+      line-height:1.3;
+    }
+    .off-zone-pill::before{
+      content:'';
+      position:absolute;
+      left:0;
+      top:3px;
+      bottom:3px;
+      width:4px;
+      border-radius:8px;
+      background:var(--off-zone-color, rgba(255,255,255,.16));
+    }
+    .off-field{ --off-zone-color:#fdb913; }
+    .off-boundary{ --off-zone-color:#ff3b30; }
+    .off-box{ --off-zone-color:#4da3ff; }
+
+
+    .type-list{display:grid;gap:10px;}
+    .type-card{
+      border:1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+      border-radius:12px;
+      overflow:hidden;
+      background:rgba(0,0,0,.08);
+    }
+    .type-head{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      cursor:pointer;
+      background:color-mix(in srgb, var(--panel2) 86%, var(--accent) 14%);
+    }
+    .type-head:hover{background:color-mix(in srgb, var(--accent) 14%, var(--panel2));}
+    .type-detail{display:none;padding:12px;border-top:1px solid color-mix(in srgb, var(--accent) 14%, var(--line));}
+    .type-card.expanded .type-detail{display:block;}
+
 </style>
 
 <style>
@@ -1025,7 +1067,7 @@
       </div>
     </div>
     <div class="panel">
-      <h2 class="section-title"><span class="tooltip-wrap">Expected play types (Top 3 formations)<span class="tooltip-dot">i</span><span class="tooltip-box">For the three most common formations this offense uses, shows the most likely play types by frequency with a confidence meter.</span></span></h2>
+      <h2 class="section-title"><span class="tooltip-wrap">Expected play by down and distance<span class="tooltip-dot">i</span><span class="tooltip-box">For each down and distance, click RUN, PASS, or RPO. Then expand FIELD, BOX, or BOUNDARY given by the defense to see where the offense attacked, with percentage and YPP.</span></span></h2>
       <div id="offExpected"></div>
     </div>
     <div class="two-col">
@@ -1232,6 +1274,12 @@ function teamMeta(code){
   return {name: code || 'Team', short: code || 'Team', logoText: code || 'TEAM', primary, secondary:'#D9DEE8'};
 }
 
+function getTeamName(abbr){
+  const key = String(abbr || '').trim();
+  return TEAM_META[key]?.name || TEAM_META[key]?.short || key;
+}
+
+
 function logoPath(code){
   if(code === 'ULM') return 'ulm-logo.png';
   return `logos/${code}.png`;
@@ -1346,7 +1394,7 @@ function fillSelect(id, values, includeAll=true){
     o.value = val;
 
     if(isCoachFacingTeamSelect && TEAM_META[val]){
-      o.textContent = TEAM_META[val].short || TEAM_META[val].name || val;
+      o.textContent = getTeamName(val);
     } else {
       o.textContent = val;
     }
@@ -1437,8 +1485,9 @@ function offensePlayerRows(rows, kind){
         const ypc = catches ? yards / catches : 0;
         const explosives = rs.filter(r => Number(r.YARDS) >= 20).length;
 
+        const team = String(rs[0]?.OFF || rs[0]?.OFFENSE || '').trim();
         return [
-          name,
+          team ? `${name} (${getTeamName(team)})` : name,
           catches,
           fmtNum(ypc),
           explosives
@@ -1453,11 +1502,14 @@ function offensePlayerRows(rows, kind){
   }
 
   return Object.entries(grouped)
-    .map(([name, rs]) => [
-      name,
-      rs.length,
-      fmtNum(rs.reduce((s,r) => s + (Number(r.YARDS) || 0), 0) / (rs.length || 1))
-    ])
+    .map(([name, rs]) => {
+      const team = String(rs[0]?.OFF || rs[0]?.OFFENSE || '').trim();
+      return [
+        team ? `${name} (${getTeamName(team)})` : name,
+        rs.length,
+        fmtNum(rs.reduce((s,r) => s + (Number(r.YARDS) || 0), 0) / (rs.length || 1))
+      ];
+    })
     .sort((a,b) =>
       parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0')) ||
       b[1] - a[1]
@@ -1481,7 +1533,10 @@ function offensePlaymakerRows(rows){
   });
 
   return Object.entries(map)
-    .map(([name, rs]) => [name, rs.length, fmtNum(rs.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(rs.length||1))])
+    .map(([name, rs]) => {
+      const team = String(rs[0]?.OFF || rs[0]?.OFFENSE || '').trim();
+      return [team ? `${name} (${getTeamName(team)})` : name, rs.length, fmtNum(rs.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(rs.length||1))];
+    })
     .sort((a,b) => parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0')) || b[1]-a[1])
     .slice(0,12);
 }
@@ -1860,6 +1915,95 @@ function refreshDefense(){
 
   renderFormationVisualStack(document.getElementById('defExpected'), { byVolume, byYpp });
 }
+
+function renderOffExpectedExplorer(el, situations){
+  if(!el) return;
+  if(!situations.length){
+    el.innerHTML = '<div class="note">No offensive situation data.</div>';
+    return;
+  }
+
+  const zonePill = (name, freq) => {
+    const cls = name === 'FIELD' ? 'off-field' : name === 'BOUNDARY' ? 'off-boundary' : 'off-box';
+    return `<div class="off-zone-pill ${cls}">${name} ${fmtPct(freq)}</div>`;
+  };
+
+  const attackTable = (rows) => `
+    <div class="mini-table">
+      <div class="mini-row mini-head"><div>Attack Zone</div><div>%</div><div>YPP</div></div>
+      ${rows.map(r => `<div class="mini-row"><div>${r.name}</div><div>${fmtPct(r.freq)}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
+    </div>
+  `;
+
+  const givenCard = (sidx, tlabel, glabel, freq, rows) => `
+    <div class="nested-zone-card" id="off-given-${sidx}-${tlabel}-${glabel}">
+      <div class="nested-zone-head" onclick="toggleOffGivenZone('${sidx}','${tlabel}','${glabel}')">
+        <div>${zonePill(glabel, freq)}</div>
+        <div class="situation-sub">click to expand</div>
+      </div>
+      <div class="nested-zone-detail">
+        ${attackTable(rows)}
+      </div>
+    </div>
+  `;
+
+  const typeCard = (sidx, t) => `
+    <div class="type-card" id="off-type-${sidx}-${t.label}">
+      <div class="type-head" onclick="toggleOffType('${sidx}','${t.label}')">
+        <div><strong>${t.label}</strong> <span class="situation-sub" style="margin-left:8px">${fmtPct(t.freq)}</span></div>
+        <div class="situation-sub">click to expand</div>
+      </div>
+      <div class="type-detail">
+        <div class="detail-title">Field zone given by defense</div>
+        <div class="nested-zone-list">
+          ${givenCard(sidx, t.label, 'FIELD', t.fieldGiven, t.fieldAttacks)}
+          ${givenCard(sidx, t.label, 'BOUNDARY', t.boundaryGiven, t.boundaryAttacks)}
+          ${givenCard(sidx, t.label, 'BOX', t.boxGiven, t.boxAttacks)}
+        </div>
+      </div>
+    </div>
+  `;
+
+  el.innerHTML = `<div class="situation-list">${
+    situations.map((s, i) => `
+      <div class="situation-card" id="off-situation-card-${i}">
+        <div class="situation-main" onclick="toggleOffSituationCard(${i})">
+          <div>
+            <div class="situation-label">${s.situation}</div>
+            <div class="situation-sub">click to expand</div>
+          </div>
+          <div><strong>${s.plays}</strong><div class="situation-sub">plays</div></div>
+          <div><strong>${fmtNum(s.ypp)}</strong><div class="situation-sub">ypp</div></div>
+          <div><strong>${fmtPct(s.run.freq)}</strong><div class="situation-sub">run</div></div>
+          <div><strong>${fmtPct(s.pass.freq)}</strong><div class="situation-sub">pass</div></div>
+          <div><strong>${fmtPct(s.rpo.freq)}</strong><div class="situation-sub">rpo</div></div>
+          <div><div class="situation-sub">top type</div><strong>${s.topType}</strong></div>
+        </div>
+        <div class="detail-wrap">
+          <div class="detail-title">Type → field zone given → field zone attacked → percentage and YPP</div>
+          <div class="type-list">
+            ${typeCard(i, s.run)}
+            ${typeCard(i, s.pass)}
+            ${typeCard(i, s.rpo)}
+          </div>
+        </div>
+      </div>
+    `).join('')
+  }</div>`;
+}
+function toggleOffSituationCard(i){
+  const el = document.getElementById(`off-situation-card-${i}`);
+  if(el) el.classList.toggle('expanded');
+}
+function toggleOffType(i, label){
+  const el = document.getElementById(`off-type-${i}-${label}`);
+  if(el) el.classList.toggle('expanded');
+}
+function toggleOffGivenZone(i, tlabel, glabel){
+  const el = document.getElementById(`off-given-${i}-${tlabel}-${glabel}`);
+  if(el) el.classList.toggle('expanded');
+}
+
 function refreshOffense(){
   const offense = firstSelected('offSelect');
   const rows = filterRows(raw, {
@@ -1948,49 +2092,80 @@ function refreshOffense(){
     ['Projection','YPP','Comp %','TTT','Neg Play %','INT Rate','Sack Rate','Scramble Rate'],
     projectionRows
   );
-
-
-  const offExpectedStacks = Object.entries(rows.reduce((acc,r)=>{
-    const f = String(r.FORMATION||'UNKNOWN').trim() || 'UNKNOWN';
-    (acc[f] ||= []).push(r);
+  const offExpectedSituations = Object.entries(rows.reduce((acc,r)=>{
+    const situation = String(r.SITUATION || 'UNKNOWN').trim() || 'UNKNOWN';
+    (acc[situation] ||= []).push(r);
     return acc;
-  },{}))
-    .sort((a,b)=>b[1].length-a[1].length)
-    .slice(0,3)
-    .map(([formation, fr])=>{
-      const total = fr.length;
-      const typeStats = Object.entries(fr.reduce((acc,r)=>{
-        const t = String(r['PLAY TYPE']||'UNKNOWN').trim() || 'UNKNOWN';
-        acc[t] = (acc[t] || 0) + 1;
-        return acc;
-      },{})).sort((a,b)=>b[1]-a[1]);
+  }, {})).map(([situation, sr]) => {
+    const total = sr.length;
+    const ypp = sr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(total || 1);
 
-      const bars = typeStats.slice(0,3).map(([name, n]) => ({
-        name,
-        freq: pct(n, total)
-      }));
-      while(bars.length < 3) bars.push({name:'—', freq:0});
+    function playTypeBucket(typeLabel){
+      const subset = sr.filter(r => {
+        const pt = String(r['PLAY TYPE'] || '').trim().toUpperCase();
+        if(typeLabel === 'RUN') return !offenseIsPassAttempt(r);
+        if(typeLabel === 'PASS') return offenseIsPassAttempt(r) && !pt.includes('RPO');
+        if(typeLabel === 'RPO') return pt.includes('RPO');
+        return false;
+      });
+      const subTotal = subset.length || 0;
 
-      const top = bars[0]?.freq || 0;
-      const second = bars[1]?.freq || 0;
-      const gap = Math.max(0, top - second);
+      function givenZoneRows(givenZone){
+        const gz = subset.filter(r => String(r['FZ ADVANTAGE'] || '').trim().toUpperCase() === givenZone);
+        const gzTotal = gz.length || 0;
+        const attacks = ['FIELD','BOX','BOUNDARY'].map(zone => {
+          const zr = gz.filter(r => String(r['FZ ATTACK'] || '').trim().toUpperCase() === zone);
+          return {
+            name: zone,
+            freq: gzTotal ? pct(zr.length, gzTotal) : 0,
+            ypp: zr.length ? zr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/zr.length : NaN
+          };
+        });
+        return { freq: pct(gz.length, subTotal), attacks };
+      }
 
-      let confidenceLabel = 'LOW';
-      if(gap >= 20) confidenceLabel = 'HIGH';
-      else if(gap >= 10) confidenceLabel = 'MEDIUM';
-
-      const confidencePct = Math.max(10, Math.min(100, gap * 3.5));
+      const fieldData = givenZoneRows('FIELD');
+      const boundaryData = givenZoneRows('BOUNDARY');
+      const boxData = givenZoneRows('BOX');
 
       return {
-        formation,
-        plays: total,
-        bars,
-        confidenceLabel,
-        confidencePct
+        label: typeLabel,
+        freq: pct(subset.length, total),
+        fieldGiven: fieldData.freq,
+        boundaryGiven: boundaryData.freq,
+        boxGiven: boxData.freq,
+        fieldAttacks: fieldData.attacks,
+        boundaryAttacks: boundaryData.attacks,
+        boxAttacks: boxData.attacks
       };
-    });
+    }
 
-  renderFormationVisualStack(document.getElementById('offExpected'), offExpectedStacks);
+    const run = playTypeBucket('RUN');
+    const pass = playTypeBucket('PASS');
+    const rpo = playTypeBucket('RPO');
+
+    const typeSummary = [
+      ['RUN', run.freq],
+      ['PASS', pass.freq],
+      ['RPO', rpo.freq]
+    ].sort((a,b)=>b[1]-a[1]);
+
+    return {
+      situation,
+      plays: total,
+      ypp,
+      run,
+      pass,
+      rpo,
+      topType: typeSummary[0] ? `${typeSummary[0][0]} ${fmtPct(typeSummary[0][1])}` : '—'
+    };
+  }).sort((a,b)=>{
+    const keyDiff = situationSortKey(a.situation) - situationSortKey(b.situation);
+    if(keyDiff !== 0) return keyDiff;
+    return b.plays - a.plays;
+  }).slice(0,12);
+
+  renderOffExpectedExplorer(document.getElementById('offExpected'), offExpectedSituations);
 
   const offCarrierRows = offensePlayerRows(rows, 'carrier');
   const offTargetRows = offensePlayerRows(rows, 'target');
