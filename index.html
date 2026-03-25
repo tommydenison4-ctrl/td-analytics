@@ -621,7 +621,12 @@
       </div>
     </div>
     <div class="panel">
-      <h2 class="section-title">Offense overview</h2>
+      <h2 class="section-title">Offensive identity snapshot</h2>
+      <div class="kpis" id="offIdentityKpis"></div>
+      <div class="note" id="offIdentityNote" style="margin-top:12px"></div>
+    </div>
+    <div class="panel">
+      <h2 class="section-title">Drive efficiency engine</h2>
       <div class="kpis" id="offKpis"></div>
     </div>
     <div class="two-col">
@@ -630,21 +635,26 @@
         <div id="offSplit"></div>
       </div>
       <div class="panel">
-        <h2 class="section-title">Opportunity model</h2>
+        <h2 class="section-title">If we improve</h2>
         <div id="oppModel"></div>
       </div>
     </div>
     <div class="two-col">
       <div class="panel">
         <h2 class="section-title">Top ball carriers</h2>
-        <div class="note">Run rows only for the selected offense filters. COMP blank/NA = run.</div>
+        <div class="note">Run rows only for the selected offense filters. COMP blank/NA = run, so quarterback keeps and other rushes show up here.</div>
         <div id="offCarrierTable"></div>
       </div>
       <div class="panel">
-        <h2 class="section-title">Top targets</h2>
-        <div class="note">Pass attempts only for the selected offense filters. COMP 0/1 = pass.</div>
+        <h2 class="section-title">Top receivers</h2>
+        <div class="note">Catches only (COMP = 1). Incompletions are excluded from the receiver table because many incomplete passes do not have a receiver tagged in the source data.</div>
         <div id="offTargetTable"></div>
       </div>
+    </div>
+    <div class="panel">
+      <h2 class="section-title">Top playmakers</h2>
+      <div class="note">Carries + catches combined. Ranked by total involvement, then YPP.</div>
+      <div id="offPlaymakersTable"></div>
     </div>
   </section>
 
@@ -770,7 +780,7 @@
         <div id="practiceCarrierTable"></div>
       </div>
       <div class="panel">
-        <h2 class="section-title">Top targets</h2>
+        <h2 class="section-title">Top receivers</h2>
         <div class="note">Pass plays only. Uses BALL CARRIER/TARGET when COMP is 0 or 1.</div>
         <div id="practiceTargetTable"></div>
       </div>
@@ -976,24 +986,96 @@ function offenseIsRunRow(r){
   return !offenseIsPassAttempt(r);
 }
 function offensePlayerRows(rows, kind){
-  const map = {};
+  const grouped = {};
+
+  function isPassValue(v){
+    return v === 0 || v === 1 || String(v).trim() === '0' || String(v).trim() === '1';
+  }
+
   rows.forEach(r => {
+    const rawName = r.PLAYER;
+    const name = String(rawName || '').trim();
+    const passRow = isPassValue(r.COMP);
+    const catchRow = (r.COMP === 1 || String(r.COMP).trim() === '1');
+    const runRow = !passRow;
+
+    if(kind === 'target'){
+      if(!catchRow || !name) return;
+      if(!grouped[name]) grouped[name] = [];
+      grouped[name].push(r);
+      return;
+    }
+
+    if(kind === 'carrier'){
+      if(!runRow || !name) return;
+      if(!grouped[name]) grouped[name] = [];
+      grouped[name].push(r);
+      return;
+    }
+  });
+
+  if(kind === 'target'){
+    return Object.entries(grouped)
+      .map(([name, rs]) => {
+        const catches = rs.length;
+        const yards = rs.reduce((s,r) => s + (Number(r.YARDS) || 0), 0);
+        const ypc = catches ? yards / catches : 0;
+        const explosives = rs.filter(r => Number(r.YARDS) >= 20).length;
+
+        return [
+          name,
+          catches,
+          fmtNum(ypc),
+          explosives
+        ];
+      })
+      .sort((a,b) =>
+        b[1] - a[1] ||
+        b[3] - a[3] ||
+        parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0'))
+      )
+      .slice(0,12);
+  }
+
+  return Object.entries(grouped)
+    .map(([name, rs]) => [
+      name,
+      rs.length,
+      fmtNum(rs.reduce((s,r) => s + (Number(r.YARDS) || 0), 0) / (rs.length || 1))
+    ])
+    .sort((a,b) =>
+      b[1] - a[1] ||
+      parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0'))
+    )
+    .slice(0,12);
+}
+function offensePlaymakerRows(rows){
+  const map = {};
+  const useRows = rows.filter(r => {
+    const comp = r.COMP;
+    const catchRow = (comp === 1 || String(comp).trim() === '1');
+    const runRow = !(comp === 0 || comp === 1 || String(comp).trim() === '0' || String(comp).trim() === '1');
+    return catchRow || runRow;
+  });
+
+  useRows.forEach(r => {
     const name = String(r.PLAYER || '').trim();
     if(!name) return;
-    const useRow = kind === 'target' ? offenseIsPassAttempt(r) : offenseIsRunRow(r);
-    if(!useRow) return;
     if(!map[name]) map[name] = [];
     map[name].push(r);
   });
+
   return Object.entries(map)
     .map(([name, rs]) => [name, rs.length, fmtNum(rs.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(rs.length||1))])
-    .sort((a,b) => b[1]-a[1] || parseFloat(b[2]) - parseFloat(a[2]))
+    .sort((a,b) => b[1]-a[1] || parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0')))
     .slice(0,12);
 }
+
 function renderKpis(el, items){
   el.innerHTML = items.map(i => `<div class="kpi"><div class="label">${i.label}</div><div class="val">${i.value}</div></div>`).join('');
 }
 function renderTable(el, headers, rows){
+  if(!el) return;
   let html = `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
   rows.forEach(r => {
     html += `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`;
@@ -1177,11 +1259,32 @@ function refreshOffense(){
     DEF: getSelectedValues('offDefense'),
     'PLAY TYPE': getSelectedValues('offPlayType'),
   });
+
   renderHero(document.getElementById('offHero'), offense, 'Offense team view', 'Branding updates to the selected offense.');
+
   const all = calcMetrics(rows);
   const adv = byAdvantage(rows);
   const yes = calcMetrics(adv.yes);
   const no = calcMetrics(adv.no);
+
+  const runRows = rows.filter(offenseIsRunRow);
+  const passRows = rows.filter(offenseIsPassAttempt);
+  const rpoRows = rows.filter(r => String(r['PLAY TYPE'] || '').toUpperCase().includes('RPO'));
+
+  renderKpis(document.getElementById('offIdentityKpis'), [
+    {label:'Run %', value: fmtPct(pct(runRows.length, rows.length))},
+    {label:'Pass %', value: fmtPct(pct(passRows.length, rows.length))},
+    {label:'RPO %', value: fmtPct(pct(rpoRows.length, rows.length))},
+    {label:'Avg YPP', value: fmtNum(all.ypp)},
+    {label:'Advantage Rate', value: fmtPct(pct(adv.yes.length, rows.length))}
+  ]);
+
+  let identity = 'Balanced';
+  if(passRows.length > runRows.length + 8) identity = 'Explosive Passing';
+  else if(runRows.length > passRows.length + 8) identity = 'Run Driven';
+  else if(rpoRows.length > rows.length * 0.22) identity = 'RPO Driven';
+  document.getElementById('offIdentityNote').textContent =
+    `This offense operates as a ${identity} system. Offensive success is primarily driven by achieving and exploiting advantage states.`;
 
   renderKpis(document.getElementById('offKpis'), [
     {label:'Plays', value: all.plays},
@@ -1224,9 +1327,9 @@ function refreshOffense(){
   ]));
 
   document.getElementById('oppModel').innerHTML = `
-    <div class="small">Projection model: if this offense operated at 60%, 70%, or 80% positive-advantage rate, the table below estimates each metric by blending current with-advantage and without-advantage performance.</div>
+    <div class="small">If we increase positive-advantage rate, this estimates how production changes.</div>
     <div class="kpis" style="margin-top:12px">
-      <div class="kpi"><div class="label">Current with-adv rate</div><div class="val">${fmtPct(currentAdvRate)}</div></div>
+      <div class="kpi"><div class="label">Current Adv %</div><div class="val">${fmtPct(currentAdvRate)}</div></div>
       <div class="kpi"><div class="label">Current YPP</div><div class="val">${fmtNum(blendMetric(currentAdvRate, yes.ypp, no.ypp))}</div></div>
       <div class="kpi"><div class="label">Current Comp %</div><div class="val">${fmtPct(blendMetric(currentAdvRate, yes.compPct, no.compPct))}</div></div>
       <div class="kpi"><div class="label">Current Neg Play %</div><div class="val">${fmtPct(blendMetric(currentAdvRate, yes.negPct, no.negPct))}</div></div>
@@ -1240,17 +1343,19 @@ function refreshOffense(){
 
   const offCarrierRows = offensePlayerRows(rows, 'carrier');
   const offTargetRows = offensePlayerRows(rows, 'target');
+  const playmakerRows = offensePlaymakerRows(rows);
 
-  renderTable(
-    document.getElementById('offCarrierTable'),
+  renderTable(document.getElementById('offCarrierTable'),
     ['Ball Carrier','Plays','YPP'],
     offCarrierRows.length ? offCarrierRows : [['—','—','—']]
   );
-
-  renderTable(
-    document.getElementById('offTargetTable'),
-    ['Target','Plays','YPP'],
-    offTargetRows.length ? offTargetRows : [['—','—','—']]
+  renderTable(document.getElementById('offTargetTable'),
+    ['Player','Catches','Yds / Catch','20+ Plays'],
+    offTargetRows.length ? offTargetRows : [['—','—','—','—']]
+  );
+  renderTable(document.getElementById('offPlaymakersTable'),
+    ['Player','Carries + Catches','YPP'],
+    playmakerRows.length ? playmakerRows : [['—','—','—']]
   );
 }
 
