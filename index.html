@@ -838,6 +838,62 @@
     tbody tr{transition:transform .12s ease, background .12s ease;}
     tbody tr:hover td{background:color-mix(in srgb, var(--accent) 16%, transparent);}
 
+
+    .zone-given-pill{
+      position:relative;
+      padding-left:12px;
+      font-weight:700;
+      line-height:1.3;
+    }
+    .zone-given-pill::before{
+      content:'';
+      position:absolute;
+      left:0;
+      top:3px;
+      bottom:3px;
+      width:4px;
+      border-radius:8px;
+      background:var(--zone-pill-color, rgba(255,255,255,.16));
+    }
+    .zone-field{ --zone-pill-color:#fdb913; }
+    .zone-boundary{ --zone-pill-color:#ff3b30; }
+    .zone-box{ --zone-pill-color:#4da3ff; }
+    .zone-grid-3{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:14px;
+    }
+    @media(max-width:1100px){
+      .zone-grid-3{ grid-template-columns:1fr; }
+    }
+
+
+    .nested-zone-list{display:grid;gap:10px;}
+    .nested-zone-card{
+      border:1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+      border-radius:12px;
+      overflow:hidden;
+      background:rgba(0,0,0,.08);
+    }
+    .nested-zone-head{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      cursor:pointer;
+      background:color-mix(in srgb, var(--panel2) 86%, var(--accent) 14%);
+    }
+    .nested-zone-head:hover{
+      background:color-mix(in srgb, var(--accent) 14%, var(--panel2));
+    }
+    .nested-zone-detail{
+      display:none;
+      padding:12px;
+      border-top:1px solid color-mix(in srgb, var(--accent) 14%, var(--line));
+    }
+    .nested-zone-card.expanded .nested-zone-detail{display:block;}
+
 </style>
 
 <style>
@@ -900,12 +956,12 @@
     </div>
     <div class="two-col">
       <div class="panel">
-        <h2 class="section-title"><span class="tooltip-wrap">Situation profile<span class="tooltip-dot">i</span><span class="tooltip-box">Expected = most frequent play type in that situation. Alert / Aware are the highest-YPP answers outside the expected type.</span></span></h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Situation profile<span class="tooltip-dot">i</span><span class="tooltip-box">Shows the field zone given up by situation. Expand a row to see how offenses attacked FIELD, BOX, and BOUNDARY when each zone was given up.</span></span></h2>
         <div class="scan-toggle"><button onclick="toggleScanMode()">Scan Mode</button></div>
         <div id="defSituations"></div>
       </div>
       <div class="panel">
-        <h2 class="section-title"><span class="tooltip-wrap">Expected play types (Top 3 formations)<span class="tooltip-dot">i</span><span class="tooltip-box">For the three most common formations against this defense, shows the most likely play types by frequency.</span></span></h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Top 10 formations against this defense<span class="tooltip-dot">i</span><span class="tooltip-box">Shows the top formations offenses ran against this defense by volume and YPP, plus the top formations by YPP with volume shown.</span></span></h2>
         <div id="defExpected"></div>
       </div>
     </div>
@@ -939,6 +995,10 @@
         <h2 class="section-title">If we improve</h2>
         <div id="oppModel"></div>
       </div>
+    </div>
+    <div class="panel">
+      <h2 class="section-title"><span class="tooltip-wrap">Expected play types (Top 3 formations)<span class="tooltip-dot">i</span><span class="tooltip-box">For the three most common formations this offense uses, shows the most likely play types by frequency with a confidence meter.</span></span></h2>
+      <div id="offExpected"></div>
     </div>
     <div class="two-col">
       <div class="panel">
@@ -1569,6 +1629,28 @@ function renderSituationExplorer(el, situations){
     el.innerHTML = '<div class="note">No situation data.</div>';
     return;
   }
+  const zonePill = (name, freq) => {
+    const cls = name === 'FIELD' ? 'zone-field' : name === 'BOUNDARY' ? 'zone-boundary' : 'zone-box';
+    return `<div class="zone-given-pill ${cls}">${name} ${fmtPct(freq)}</div>`;
+  };
+  const attackTable = (rows) => `
+    <div class="mini-table">
+      <div class="mini-row mini-head"><div>Attack Zone</div><div>%</div><div>YPP</div></div>
+      ${rows.map(r => `<div class="mini-row"><div>${r.name}</div><div>${fmtPct(r.freq)}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
+    </div>
+  `;
+  const nestedCard = (idx, label, freq, rows) => `
+    <div class="nested-zone-card" id="nested-zone-${idx}-${label}">
+      <div class="nested-zone-head" onclick="toggleNestedZone('${idx}','${label}')">
+        <div>${zonePill(label, freq)}</div>
+        <div class="situation-sub">click to expand</div>
+      </div>
+      <div class="nested-zone-detail">
+        ${attackTable(rows)}
+      </div>
+    </div>
+  `;
+
   el.innerHTML = `<div class="situation-list">${
     situations.map((s, i) => `
       <div class="situation-card" id="situation-card-${i}">
@@ -1579,34 +1661,17 @@ function renderSituationExplorer(el, situations){
           </div>
           <div><strong>${s.plays}</strong><div class="situation-sub">plays</div></div>
           <div><strong>${fmtNum(s.ypp)}</strong><div class="situation-sub">ypp allowed</div></div>
-          <div>${signalHtml(s.expected.name, s.expected.ypp, s.expected.freq)}</div>
-          <div>${signalHtml(s.alert1?.name, s.alert1?.ypp, s.alert1?.freq)}</div>
-          <div>${signalHtml(s.aware?.name, s.aware?.ypp, s.aware?.freq)}</div>
-          <div>${signalHtml(s.alert3?.name, s.alert3?.ypp, s.alert3?.freq)}</div>
+          <div>${zonePill('FIELD', s.fieldGiven)}</div>
+          <div>${zonePill('BOUNDARY', s.boundaryGiven)}</div>
+          <div>${zonePill('BOX', s.boxGiven)}</div>
+          <div><div class="situation-sub">top zone</div><strong>${s.topZone}</strong></div>
         </div>
         <div class="detail-wrap">
-          <div class="detail-grid">
-            <div>
-              <div class="detail-title">Formation breakdown</div>
-              <div class="mini-table">
-                <div class="mini-row mini-head"><div>Formation</div><div>%</div><div>YPP</div></div>
-                ${s.formations.map(r => `<div class="mini-row"><div>${r.name}</div><div>${fmtPct(r.freq)}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
-              </div>
-            </div>
-            <div>
-              <div class="detail-title">Play type split</div>
-              <div class="mini-table">
-                <div class="mini-row mini-head"><div>Play Type</div><div>%</div><div>YPP</div></div>
-                ${s.playTypes.map(r => `<div class="mini-row"><div>${r.name}</div><div>${fmtPct(r.freq)}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
-              </div>
-            </div>
-            <div>
-              <div class="detail-title">YPP by concept</div>
-              <div class="mini-table">
-                <div class="mini-row mini-head"><div>Concept</div><div>Plays</div><div>YPP</div></div>
-                ${s.concepts.map(r => `<div class="mini-row"><div>${r.name}</div><div>${r.plays}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
-              </div>
-            </div>
+          <div class="detail-title">Click a zone given up to see FIELD / BOX / BOUNDARY attacks, percentages, and YPP.</div>
+          <div class="nested-zone-list">
+            ${nestedCard(i, 'FIELD', s.fieldGiven, s.fieldAttacks)}
+            ${nestedCard(i, 'BOUNDARY', s.boundaryGiven, s.boundaryAttacks)}
+            ${nestedCard(i, 'BOX', s.boxGiven, s.boxAttacks)}
           </div>
         </div>
       </div>
@@ -1617,39 +1682,32 @@ function toggleSituationCard(i){
   const el = document.getElementById(`situation-card-${i}`);
   if(el) el.classList.toggle('expanded');
 }
-function renderFormationVisualStack(el, stacks){
+function toggleNestedZone(i, label){
+  const el = document.getElementById(`nested-zone-${i}-${label}`);
+  if(el) el.classList.toggle('expanded');
+}
+function renderFormationVisualStack(el, payload){
   if(!el) return;
-  if(!stacks.length){
-    el.innerHTML = '<div class="note">No formation tendency data.</div>';
-    return;
-  }
-  el.innerHTML = `<div class="stack-list">${
-    stacks.map(s => `
-      <div class="stack-card">
-        <div class="stack-head">
-          <div>
-            <div class="stack-title">${s.formation}</div>
-            <div class="stack-sub">${s.plays} plays</div>
-          </div>
-          <div class="stack-sub">Expected family confidence</div>
-        </div>
-        ${s.bars.map(b => `
-          <div class="bar-row">
-            <span>${b.name}</span>
-            <div class="bar"><div class="fill" style="width:${Math.max(4, Math.min(100, b.freq))}%"></div></div>
-            <span>${fmtPct(b.freq)}</span>
-          </div>
-        `).join('')}
-        <div class="confidence-wrap">
-          <div class="confidence-label">
-            <span>Confidence meter</span>
-            <span>${s.confidenceLabel}</span>
-          </div>
-          <div class="confidence-meter"><div class="confidence-fill" style="width:${s.confidencePct}%"></div></div>
+  const byVolume = payload?.byVolume || [];
+  const byYpp = payload?.byYpp || [];
+  el.innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="detail-title">Top 10 by volume</div>
+        <div class="mini-table">
+          <div class="mini-row mini-head"><div>Formation</div><div>Plays</div><div>YPP</div></div>
+          ${byVolume.map(r => `<div class="mini-row"><div>${r.formation}</div><div>${r.plays}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
         </div>
       </div>
-    `).join('')
-  }</div>`;
+      <div>
+        <div class="detail-title">Top 10 by YPP</div>
+        <div class="mini-table">
+          <div class="mini-row mini-head"><div>Formation</div><div>YPP</div><div>Plays</div></div>
+          ${byYpp.map(r => `<div class="mini-row"><div>${r.formation}</div><div>${fmtNum(r.ypp)}</div><div>${r.plays}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 
@@ -1698,8 +1756,7 @@ function refreshDefense(){
     ['Formation','Plays','YPP','Comp %','With Adv Rate'],
     formRows
   );
-
-  // Situation explorer
+  // Situation explorer: zone given up by situation (FZ ADVANTAGE) with attack-zone/YPP detail (FZ ATTACK)
   const situationModels = Object.entries(rows.reduce((acc,r)=>{
     const situation = String(r.SITUATION || 'UNKNOWN').trim() || 'UNKNOWN';
     (acc[situation] ||= []).push(r);
@@ -1708,102 +1765,72 @@ function refreshDefense(){
     const total = rs.length;
     const ypp = rs.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(total || 1);
 
-    const typeBuckets = Object.entries(rs.reduce((acc,r)=>{
-      const t = String(r['PLAY TYPE'] || 'UNKNOWN').trim() || 'UNKNOWN';
-      (acc[t] ||= []).push(r);
-      return acc;
-    }, {}));
+    const givenZoneRows = (givenZone) => {
+      const subset = rs.filter(r => String(r['FZ ADVANTAGE'] || '').trim().toUpperCase() === givenZone);
+      const subTotal = subset.length || 0;
+      const attacks = ['FIELD','BOX','BOUNDARY'].map(zone => {
+        const zr = subset.filter(r => String(r['FZ ATTACK'] || '').trim().toUpperCase() === zone);
+        return {
+          name: zone,
+          freq: subTotal ? pct(zr.length, subTotal) : 0,
+          ypp: zr.length ? zr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/zr.length : NaN
+        };
+      });
+      return {
+        freq: pct(subset.length, total),
+        attacks
+      };
+    };
 
-    const expectedSorted = [...typeBuckets].sort((a,b)=>b[1].length-a[1].length);
-    const expected = expectedSorted[0]
-      ? {
-          name: expectedSorted[0][0],
-          freq: pct(expectedSorted[0][1].length, total),
-          ypp: expectedSorted[0][1].reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(expectedSorted[0][1].length||1)
-        }
-      : null;
+    const fieldData = givenZoneRows('FIELD');
+    const boundaryData = givenZoneRows('BOUNDARY');
+    const boxData = givenZoneRows('BOX');
 
-    const alertSorted = typeBuckets
-      .filter(([name]) => !expected || name !== expected.name)
-      .map(([name, tr]) => ({
-        name,
-        freq: pct(tr.length, total),
-        ypp: tr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(tr.length||1)
-      }))
-      .sort((a,b)=>b.ypp-a.ypp);
-
-    const formations = Object.entries(rs.reduce((acc,r)=>{
-      const f = String(r.FORMATION || 'UNKNOWN').trim() || 'UNKNOWN';
-      (acc[f] ||= []).push(r);
-      return acc;
-    }, {})).map(([name, fr]) => ({
-      name,
-      plays: fr.length,
-      freq: pct(fr.length, total),
-      ypp: fr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(fr.length||1)
-    })).sort((a,b)=>b.freq-a.freq).slice(0,5);
-
-    const playTypes = typeBuckets.map(([name, tr]) => ({
-      name,
-      plays: tr.length,
-      freq: pct(tr.length, total),
-      ypp: tr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(tr.length||1)
-    })).sort((a,b)=>b.freq-a.freq).slice(0,5);
-
-    const concepts = Object.entries(rs.reduce((acc,r)=>{
-      const concept = `${String(r.FORMATION || 'UNK').trim() || 'UNK'} • ${String(r['PLAY TYPE'] || 'UNKNOWN').trim() || 'UNKNOWN'}`;
-      (acc[concept] ||= []).push(r);
-      return acc;
-    }, {})).map(([name, cr]) => ({
-      name,
-      plays: cr.length,
-      ypp: cr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(cr.length||1)
-    })).sort((a,b)=>b.ypp-a.ypp).slice(0,5);
+    const zoneSummary = [
+      ['FIELD', fieldData.freq],
+      ['BOUNDARY', boundaryData.freq],
+      ['BOX', boxData.freq]
+    ].sort((a,b)=>b[1]-a[1]);
 
     return {
       situation,
       plays: total,
       ypp,
-      expected,
-      alert1: alertSorted[0] || null,
-      aware: alertSorted[1] || null,
-      alert3: alertSorted[2] || null,
-      formations,
-      playTypes,
-      concepts
+      fieldGiven: fieldData.freq,
+      boundaryGiven: boundaryData.freq,
+      boxGiven: boxData.freq,
+      topZone: zoneSummary[0] ? `${zoneSummary[0][0]} ${fmtPct(zoneSummary[0][1])}` : '—',
+      fieldAttacks: fieldData.attacks,
+      boundaryAttacks: boundaryData.attacks,
+      boxAttacks: boxData.attacks
     };
   }).sort((a,b)=>{
-      const keyDiff = situationSortKey(a.situation) - situationSortKey(b.situation);
-      if(keyDiff !== 0) return keyDiff;
-      return b.plays - a.plays;
-    }).slice(0,10);
+    const keyDiff = situationSortKey(a.situation) - situationSortKey(b.situation);
+    if(keyDiff !== 0) return keyDiff;
+    return b.plays - a.plays;
+  }).slice(0,12);
 
   renderSituationExplorer(document.getElementById('defSituations'), situationModels);
 
-  // Formation visual stack + confidence meter
-  const stackData = Object.entries(rows.reduce((acc,r)=>{
-    const f = String(r.FORMATION || 'UNKNOWN').trim() || 'UNKNOWN';
-    (acc[f] ||= []).push(r);
+  const formationStats = Object.entries(rows.reduce((acc,r)=>{
+    const formation = String(r.FORMATION || 'UNKNOWN').trim() || 'UNKNOWN';
+    (acc[formation] ||= []).push(r);
     return acc;
-  }, {})).sort((a,b)=>b[1].length-a[1].length).slice(0,3).map(([formation, fr])=>{
-    const total = fr.length;
-    const typeStats = Object.entries(fr.reduce((acc,r)=>{
-      const t = String(r['PLAY TYPE'] || 'UNKNOWN').trim() || 'UNKNOWN';
-      acc[t] = (acc[t] || 0) + 1;
-      return acc;
-    }, {})).sort((a,b)=>b[1]-a[1]);
-    const bars = typeStats.slice(0,3).map(([name, n]) => ({ name, freq: pct(n, total) }));
-    while(bars.length < 3) bars.push({name:'—', freq:0});
-    const top = bars[0]?.freq || 0;
-    const second = bars[1]?.freq || 0;
-    const gap = Math.max(0, top - second);
-    let confidenceLabel = 'LOW';
-    if(gap >= 20) confidenceLabel = 'HIGH';
-    else if(gap >= 10) confidenceLabel = 'MEDIUM';
-    const confidencePct = Math.max(10, Math.min(100, gap * 3.5));
-    return { formation, plays: total, bars, confidenceLabel, confidencePct };
-  });
-  renderFormationVisualStack(document.getElementById('defExpected'), stackData);
+  },{})).map(([formation, fr]) => ({
+    formation,
+    plays: fr.length,
+    ypp: fr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(fr.length||1)
+  }));
+
+  const byVolume = [...formationStats]
+    .sort((a,b)=>b.plays-a.plays || b.ypp-a.ypp)
+    .slice(0,10);
+
+  const byYpp = [...formationStats]
+    .sort((a,b)=>b.ypp-a.ypp || b.plays-a.plays)
+    .slice(0,10);
+
+  renderFormationVisualStack(document.getElementById('defExpected'), { byVolume, byYpp });
 }
 function refreshOffense(){
   const offense = firstSelected('offSelect');
@@ -1893,6 +1920,49 @@ function refreshOffense(){
     ['Projection','YPP','Comp %','TTT','Neg Play %','INT Rate','Sack Rate','Scramble Rate'],
     projectionRows
   );
+
+
+  const offExpectedStacks = Object.entries(rows.reduce((acc,r)=>{
+    const f = String(r.FORMATION||'UNKNOWN').trim() || 'UNKNOWN';
+    (acc[f] ||= []).push(r);
+    return acc;
+  },{}))
+    .sort((a,b)=>b[1].length-a[1].length)
+    .slice(0,3)
+    .map(([formation, fr])=>{
+      const total = fr.length;
+      const typeStats = Object.entries(fr.reduce((acc,r)=>{
+        const t = String(r['PLAY TYPE']||'UNKNOWN').trim() || 'UNKNOWN';
+        acc[t] = (acc[t] || 0) + 1;
+        return acc;
+      },{})).sort((a,b)=>b[1]-a[1]);
+
+      const bars = typeStats.slice(0,3).map(([name, n]) => ({
+        name,
+        freq: pct(n, total)
+      }));
+      while(bars.length < 3) bars.push({name:'—', freq:0});
+
+      const top = bars[0]?.freq || 0;
+      const second = bars[1]?.freq || 0;
+      const gap = Math.max(0, top - second);
+
+      let confidenceLabel = 'LOW';
+      if(gap >= 20) confidenceLabel = 'HIGH';
+      else if(gap >= 10) confidenceLabel = 'MEDIUM';
+
+      const confidencePct = Math.max(10, Math.min(100, gap * 3.5));
+
+      return {
+        formation,
+        plays: total,
+        bars,
+        confidenceLabel,
+        confidencePct
+      };
+    });
+
+  renderFormationVisualStack(document.getElementById('offExpected'), offExpectedStacks);
 
   const offCarrierRows = offensePlayerRows(rows, 'carrier');
   const offTargetRows = offensePlayerRows(rows, 'target');
