@@ -548,7 +548,297 @@
       box-shadow:0 12px 28px rgba(0,0,0,.34), 0 0 0 3px rgba(132,0,41,.22);
     }
 
-  </style>
+  
+    /* polished scrollbars */
+    select, .panel, .attack-stage, .wrap{
+      scrollbar-width: thin;
+      scrollbar-color: rgba(253,185,19,.55) rgba(255,255,255,.06);
+    }
+    select::-webkit-scrollbar, .panel::-webkit-scrollbar, .attack-stage::-webkit-scrollbar, .wrap::-webkit-scrollbar{
+      width:10px;height:10px;
+    }
+    select::-webkit-scrollbar-track, .panel::-webkit-scrollbar-track, .attack-stage::-webkit-scrollbar-track, .wrap::-webkit-scrollbar-track{
+      background:rgba(255,255,255,.06); border-radius:10px;
+    }
+    select::-webkit-scrollbar-thumb, .panel::-webkit-scrollbar-thumb, .attack-stage::-webkit-scrollbar-thumb, .wrap::-webkit-scrollbar-thumb{
+      background:linear-gradient(180deg, rgba(253,185,19,.78), rgba(132,0,41,.78));
+      border-radius:10px; border:2px solid rgba(8,11,18,.25);
+    }
+    /* hover tooltips */
+    .tooltip-wrap{position:relative;display:inline-flex;align-items:center;gap:6px;cursor:help}
+    .tooltip-dot{
+      width:14px;height:14px;border-radius:50%;
+      display:inline-flex;align-items:center;justify-content:center;
+      font-size:10px;font-weight:700;
+      color:#0b1220;background:rgba(253,185,19,.92);
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+    .tooltip-box{
+      visibility:hidden;opacity:0;transition:opacity .15s ease;
+      position:absolute;left:0;top:calc(100% + 8px);
+      min-width:190px;max-width:280px;
+      background:rgba(9,12,18,.98);color:#fff4da;
+      border:1px solid rgba(253,185,19,.26);border-radius:12px;
+      padding:8px 10px;line-height:1.35;font-size:12px;
+      box-shadow:0 12px 28px rgba(0,0,0,.35); z-index:100;
+    }
+    .tooltip-wrap:hover .tooltip-box{visibility:visible;opacity:1}
+
+
+    /* v29 defense redesign */
+    .scan-toggle{
+      display:flex;
+      justify-content:flex-end;
+      margin:-4px 0 10px;
+    }
+    .scan-toggle button{
+      background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 58%, var(--panel)), color-mix(in srgb, var(--accent) 32%, var(--panel2)));
+      color:var(--text);
+      border:1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+      border-radius:12px;
+      padding:8px 12px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(0,0,0,.18);
+    }
+    .scan-mode .situation-card .detail-grid,
+    .scan-mode .situation-card .detail-title,
+    .scan-mode .situation-card .detail-note{
+      display:none;
+    }
+    .scan-mode .situation-main{
+      grid-template-columns:1.4fr .55fr .8fr 1.1fr 1.1fr 1.1fr 1.1fr;
+    }
+    .situation-list{
+      display:grid;
+      gap:12px;
+    }
+    .situation-card{
+      border:1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+      border-radius:16px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--panel2) 70%, var(--accent) 30%), color-mix(in srgb, var(--panel) 84%, var(--accent) 16%));
+      overflow:hidden;
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+    }
+    .situation-main{
+      display:grid;
+      grid-template-columns:1.4fr .55fr .8fr 1.1fr 1.1fr 1.1fr 1.1fr;
+      gap:10px;
+      align-items:center;
+      padding:14px 14px 13px;
+      cursor:pointer;
+    }
+    .situation-main:hover{
+      background:color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    .situation-main > div{
+      min-width:0;
+    }
+    .situation-label{
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:-0.01em;
+    }
+    .situation-sub{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .sig-pill{
+      position:relative;
+      padding-left:12px;
+      font-weight:700;
+      line-height:1.3;
+    }
+    .sig-pill::before{
+      content:'';
+      position:absolute;
+      left:0;
+      top:3px;
+      bottom:3px;
+      width:4px;
+      border-radius:8px;
+      background:var(--sig-color, transparent);
+    }
+    .sig-red{ --sig-color:#ff3b30; }
+    .sig-orange{ --sig-color:#ff9500; }
+    .sig-white{ --sig-color:rgba(255,255,255,.16); }
+    .detail-wrap{
+      border-top:1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+      padding:14px;
+      display:none;
+      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.12));
+    }
+    .situation-card.expanded .detail-wrap{
+      display:block;
+    }
+    .detail-title{
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:10px;
+      font-weight:700;
+    }
+    .detail-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:14px;
+    }
+    @media(max-width:1100px){
+      .detail-grid{ grid-template-columns:1fr; }
+      .situation-main{ grid-template-columns:1fr 1fr; }
+    }
+    .mini-table{
+      border:1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+      border-radius:12px;
+      overflow:hidden;
+      background:rgba(0,0,0,.08);
+    }
+    .mini-row{
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      gap:10px;
+      padding:9px 10px;
+      border-bottom:1px solid color-mix(in srgb, var(--line) 72%, transparent);
+      font-size:13px;
+      align-items:center;
+    }
+    .mini-row:last-child{ border-bottom:none; }
+    .mini-head{
+      background:color-mix(in srgb, var(--panel2) 86%, var(--accent) 14%);
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .stack-list{
+      display:grid;
+      gap:14px;
+    }
+    .stack-card{
+      border:1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+      border-radius:16px;
+      padding:14px;
+      background:linear-gradient(180deg, color-mix(in srgb, var(--panel2) 74%, var(--accent) 26%), color-mix(in srgb, var(--panel) 84%, var(--accent) 16%));
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+    }
+    .stack-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-end;
+      margin-bottom:10px;
+    }
+    .stack-title{
+      font-weight:800;
+      font-size:16px;
+      letter-spacing:-0.01em;
+    }
+    .stack-sub{
+      color:var(--muted);
+      font-size:12px;
+    }
+    .bar-row{
+      display:grid;
+      grid-template-columns:88px 1fr 48px;
+      align-items:center;
+      gap:10px;
+      margin:7px 0;
+      font-size:13px;
+    }
+    .bar{
+      position:relative;
+      height:10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.25);
+    }
+    .fill{
+      position:absolute;
+      left:0; top:0; bottom:0;
+      border-radius:999px;
+      background:linear-gradient(90deg, #FDB913, #840029);
+    }
+    .confidence-wrap{
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+    }
+    .confidence-meter{
+      height:8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;
+      margin-top:6px;
+    }
+    .confidence-fill{
+      height:100%;
+      background:linear-gradient(90deg, #FDB913, #ff9500, #ff3b30);
+      border-radius:999px;
+    }
+    .confidence-label{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:12px;
+      font-weight:700;
+    }
+
+
+    .hero-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+    .hero-stat{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--text);background:linear-gradient(180deg,color-mix(in srgb,var(--panel2) 70%,var(--accent) 30%),color-mix(in srgb,var(--panel2) 82%,var(--accent) 18%));border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line));box-shadow:0 6px 16px rgba(0,0,0,.18);}
+
+
+    /* v30b safe sitewide premium */
+    .tabs{gap:12px;margin:10px 0 22px;}
+    .tab{
+      border-radius:14px;
+      padding:11px 16px;
+      box-shadow:0 8px 18px rgba(0,0,0,.14);
+      transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    .tab:hover{transform:translateY(-1px);box-shadow:0 12px 22px rgba(0,0,0,.18);}
+    .tab.active{box-shadow:0 10px 24px rgba(0,0,0,.24),0 0 0 1px color-mix(in srgb, var(--accent) 36%, transparent) inset;}
+    .panel{
+      box-shadow:
+        0 18px 34px rgba(0,0,0,.26),
+        0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent) inset;
+    }
+    .controls{
+      position:sticky;
+      top:74px;
+      z-index:20;
+      background:rgba(9,12,18,.76);
+      backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:16px;
+      padding:10px;
+      box-shadow:0 12px 26px rgba(0,0,0,.22);
+    }
+    .kpi{
+      box-shadow:
+        0 12px 28px rgba(0,0,0,.24),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -1px 0 rgba(0,0,0,.18);
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .kpi:hover{
+      transform:translateY(-2px) scale(1.018);
+      box-shadow:
+        0 18px 36px rgba(0,0,0,.30),
+        inset 0 1px 0 rgba(255,255,255,.09),
+        inset 0 -1px 0 rgba(0,0,0,.2);
+    }
+    table{border-radius:14px;overflow:hidden;}
+    tbody tr{transition:transform .12s ease, background .12s ease;}
+    tbody tr:hover td{background:color-mix(in srgb, var(--accent) 16%, transparent);}
+
+</style>
 
 <style>
 .watermark-logo {
@@ -608,6 +898,17 @@
         <div id="defForms"></div>
       </div>
     </div>
+    <div class="two-col">
+      <div class="panel">
+        <h2 class="section-title"><span class="tooltip-wrap">Situation profile<span class="tooltip-dot">i</span><span class="tooltip-box">Expected = most frequent play type in that situation. Alert / Aware are the highest-YPP answers outside the expected type.</span></span></h2>
+        <div class="scan-toggle"><button onclick="toggleScanMode()">Scan Mode</button></div>
+        <div id="defSituations"></div>
+      </div>
+      <div class="panel">
+        <h2 class="section-title"><span class="tooltip-wrap">Expected play types (Top 3 formations)<span class="tooltip-dot">i</span><span class="tooltip-box">For the three most common formations against this defense, shows the most likely play types by frequency.</span></span></h2>
+        <div id="defExpected"></div>
+      </div>
+    </div>
   </section>
 
   <section id="offense" class="tabpage hidden">
@@ -641,12 +942,12 @@
     </div>
     <div class="two-col">
       <div class="panel">
-        <h2 class="section-title">Top ball carriers</h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Top ball carriers<span class="tooltip-dot">i</span><span class="tooltip-box">Run rows only. Based on COMP blank/NA in the source data.</span></span></h2>
         <div class="note">Run rows only for the selected offense filters. COMP blank/NA = run, so quarterback keeps and other rushes show up here.</div>
         <div id="offCarrierTable"></div>
       </div>
       <div class="panel">
-        <h2 class="section-title">Top receivers</h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Top receivers<span class="tooltip-dot">i</span><span class="tooltip-box">Catch-only table. Uses completed pass rows where COMP = 1.</span></span></h2>
         <div class="note">Catches only (COMP = 1). Incompletions are excluded from the receiver table because many incomplete passes do not have a receiver tagged in the source data.</div>
         <div id="offTargetTable"></div>
       </div>
@@ -697,7 +998,7 @@
     </div>
     <div class="two-col">
       <div class="panel">
-        <h2 class="section-title">Field attack map</h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Field attack map<span class="tooltip-dot">i</span><span class="tooltip-box">Shows where the offense is attacking: field, box, or boundary.</span></span></h2>
         <div class="note">Shows where the ball was attacked — FIELD (wide side), BOUNDARY (short side), or BOX (oline area) — positioned directly on the supplied field graphic.</div>
         <div class="attack-stage"><div class="attack-head"><div class="attack-title">Attack Distribution</div><div id="zonesSummary" class="attack-summary"></div></div><div id="zonesFieldWrap"></div></div>
       </div>
@@ -722,7 +1023,7 @@
     </div>
     <div class="two-col">
       <div class="panel">
-        <h2 class="section-title">Defense attack map</h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Defense attack map<span class="tooltip-dot">i</span><span class="tooltip-box">Shows where offenses attacked this defense: field, box, or boundary.</span></span></h2>
         <div class="note">Shows where offenses attacked this defense — FIELD, BOUNDARY, or BOX — using the FZ ATTACK column.</div>
         <div class="attack-stage">
           <div class="attack-head">
@@ -759,7 +1060,7 @@
       </div>
     </div>
     <div class="panel">
-      <h2 class="section-title">Practice overview</h2>
+      <h2 class="section-title"><span class="tooltip-wrap">Practice overview<span class="tooltip-dot">i</span><span class="tooltip-box">Core practice production snapshot for the current practice filters.</span></span></h2>
       <div class="kpis" id="practiceKpis"></div>
     </div>
     <div class="two-col">
@@ -775,12 +1076,12 @@
     </div>
     <div class="two-col">
       <div class="panel">
-        <h2 class="section-title">Top ball carriers</h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Top ball carriers<span class="tooltip-dot">i</span><span class="tooltip-box">Run rows only. Based on COMP blank/NA in the source data.</span></span></h2>
         <div class="note">Run plays only. Uses BALL CARRIER/TARGET when COMP is NA/blank.</div>
         <div id="practiceCarrierTable"></div>
       </div>
       <div class="panel">
-        <h2 class="section-title">Top receivers</h2>
+        <h2 class="section-title"><span class="tooltip-wrap">Top receivers<span class="tooltip-dot">i</span><span class="tooltip-box">Catch-only table. Uses completed pass rows where COMP = 1.</span></span></h2>
         <div class="note">Pass plays only. Uses BALL CARRIER/TARGET when COMP is 0 or 1.</div>
         <div id="practiceTargetTable"></div>
       </div>
@@ -897,11 +1198,15 @@ function setThemeForTeam(code){
   root.style.setProperty('--accent-2', safeColor(team.secondary, '#d7e6ff'));
   root.style.setProperty('--line', `color-mix(in srgb, ${safeColor(team.primary, '#68a0ff')} 35%, #26324d)`);
 }
-function renderHero(el, code, title, subtitle){
+
+function renderHero(el, code, title, subtitle, stats=[]){
   const team = teamMeta(code);
   const imgSrc = logoUrl(code) || logoPath(code);
   const local = logoPath(code);
   const watermark = `<div class="hero-watermark"><img src="${imgSrc}" alt="${team.name} logo watermark" onerror="if(this.dataset.fallback!=='1'){this.dataset.fallback='1'; this.src='${local}';}else{this.parentElement.style.display='none';}"></div>`;
+  const statHtml = (stats || []).length
+    ? `<div class="hero-stats">${stats.map(s => `<div class="hero-stat">${s}</div>`).join('')}</div>`
+    : '';
   el.innerHTML = `
     ${watermark}
     <div style="display:flex;align-items:center;gap:14px;position:relative;z-index:2;">
@@ -914,11 +1219,13 @@ function renderHero(el, code, title, subtitle){
         <h2>${team.short}</h2>
         <div class="meta">${title}</div>
         <div class="meta">${subtitle}</div>
+        ${statHtml}
         <div class="code">${code} · ${team.name}</div>
       </div>
     </div>
   `;
 }
+
 function getSelectedValues(elOrId){
   const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
   if(!el) return ['ALL'];
@@ -932,16 +1239,36 @@ function fillSelect(id, values, includeAll=true){
   const el = document.getElementById(id);
   const current = getSelectedValues(el);
   el.innerHTML = '';
+  const coachFacingTeamSelects = new Set([
+    'defSelect','offSelect','offDefense','playerOffense','playerDefense',
+    'zonesOffense','zonesDefense','defAttackDefense','defAttackOffense'
+  ]);
+  const isCoachFacingTeamSelect = coachFacingTeamSelects.has(id);
+
   if(includeAll){
-    const o = document.createElement('option'); o.value = 'ALL'; o.textContent = 'All'; el.appendChild(o);
+    const o = document.createElement('option');
+    o.value = 'ALL';
+    o.textContent = 'All';
+    el.appendChild(o);
   }
+
   values.forEach(v => {
-    const o = document.createElement('option'); o.value = String(v); o.textContent = String(v); el.appendChild(o);
+    const val = String(v);
+    const o = document.createElement('option');
+    o.value = val;
+
+    if(isCoachFacingTeamSelect && TEAM_META[val]){
+      o.textContent = TEAM_META[val].short || TEAM_META[val].name || val;
+    } else {
+      o.textContent = val;
+    }
+    el.appendChild(o);
   });
-  [...el.options].forEach(o => {
-    if(current.includes(o.value)) o.selected = true;
+
+  current.forEach(v => {
+    const opt = [...el.options].find(o => o.value === v);
+    if(opt) opt.selected = true;
   });
-  if(![...el.selectedOptions].length && el.options.length) el.options[0].selected = true;
 }
 function filterRows(rows, filters){
   return rows.filter(r => Object.entries(filters).every(([k,v]) => {
@@ -1044,8 +1371,8 @@ function offensePlayerRows(rows, kind){
       fmtNum(rs.reduce((s,r) => s + (Number(r.YARDS) || 0), 0) / (rs.length || 1))
     ])
     .sort((a,b) =>
-      b[1] - a[1] ||
-      parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0'))
+      parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0')) ||
+      b[1] - a[1]
     )
     .slice(0,12);
 }
@@ -1067,7 +1394,7 @@ function offensePlaymakerRows(rows){
 
   return Object.entries(map)
     .map(([name, rs]) => [name, rs.length, fmtNum(rs.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(rs.length||1))])
-    .sort((a,b) => b[1]-a[1] || parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0')))
+    .sort((a,b) => parseFloat(String(b[2]).replace('—','0')) - parseFloat(String(a[2]).replace('—','0')) || b[1]-a[1])
     .slice(0,12);
 }
 
@@ -1206,6 +1533,126 @@ function setupTabs(){
   }));
 }
 
+
+
+function situationSortKey(s){
+  const str = String(s || '').toUpperCase();
+
+  const downMatch = str.match(/(P|1|2|3|4)/);
+  const distMatch = str.match(/(10|XL|L|M|S)/);
+
+  const down = downMatch ? downMatch[1] : 'Z';
+  const dist = distMatch ? distMatch[1] : 'Z';
+
+  const downOrder = { 'P':0, '1':1, '2':2, '3':3, '4':4 };
+  const distOrder = { '10':0, 'XL':1, 'L':2, 'M':3, 'S':4 };
+
+  return (downOrder[down] ?? 9) * 10 + (distOrder[dist] ?? 9);
+}
+
+function toggleScanMode(){
+  document.body.classList.toggle('scan-mode');
+}
+function signalColor(ypp, freq){
+  if(Number.isFinite(ypp) && ypp > 6.5) return 'red';
+  if(Number.isFinite(freq) && freq > 40) return 'orange';
+  return 'white';
+}
+function signalHtml(name, ypp, freq){
+  if(!name || name === '—') return '—';
+  const cls = `sig-${signalColor(ypp, freq)}`;
+  return `<div class="sig-pill ${cls}">${name} (${fmtNum(ypp)}, ${fmtPct(freq)})</div>`;
+}
+function renderSituationExplorer(el, situations){
+  if(!el) return;
+  if(!situations.length){
+    el.innerHTML = '<div class="note">No situation data.</div>';
+    return;
+  }
+  el.innerHTML = `<div class="situation-list">${
+    situations.map((s, i) => `
+      <div class="situation-card" id="situation-card-${i}">
+        <div class="situation-main" onclick="toggleSituationCard(${i})">
+          <div>
+            <div class="situation-label">${s.situation}</div>
+            <div class="situation-sub">click to expand</div>
+          </div>
+          <div><strong>${s.plays}</strong><div class="situation-sub">plays</div></div>
+          <div><strong>${fmtNum(s.ypp)}</strong><div class="situation-sub">ypp allowed</div></div>
+          <div>${signalHtml(s.expected.name, s.expected.ypp, s.expected.freq)}</div>
+          <div>${signalHtml(s.alert1?.name, s.alert1?.ypp, s.alert1?.freq)}</div>
+          <div>${signalHtml(s.aware?.name, s.aware?.ypp, s.aware?.freq)}</div>
+          <div>${signalHtml(s.alert3?.name, s.alert3?.ypp, s.alert3?.freq)}</div>
+        </div>
+        <div class="detail-wrap">
+          <div class="detail-grid">
+            <div>
+              <div class="detail-title">Formation breakdown</div>
+              <div class="mini-table">
+                <div class="mini-row mini-head"><div>Formation</div><div>%</div><div>YPP</div></div>
+                ${s.formations.map(r => `<div class="mini-row"><div>${r.name}</div><div>${fmtPct(r.freq)}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
+              </div>
+            </div>
+            <div>
+              <div class="detail-title">Play type split</div>
+              <div class="mini-table">
+                <div class="mini-row mini-head"><div>Play Type</div><div>%</div><div>YPP</div></div>
+                ${s.playTypes.map(r => `<div class="mini-row"><div>${r.name}</div><div>${fmtPct(r.freq)}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
+              </div>
+            </div>
+            <div>
+              <div class="detail-title">YPP by concept</div>
+              <div class="mini-table">
+                <div class="mini-row mini-head"><div>Concept</div><div>Plays</div><div>YPP</div></div>
+                ${s.concepts.map(r => `<div class="mini-row"><div>${r.name}</div><div>${r.plays}</div><div>${fmtNum(r.ypp)}</div></div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('')
+  }</div>`;
+}
+function toggleSituationCard(i){
+  const el = document.getElementById(`situation-card-${i}`);
+  if(el) el.classList.toggle('expanded');
+}
+function renderFormationVisualStack(el, stacks){
+  if(!el) return;
+  if(!stacks.length){
+    el.innerHTML = '<div class="note">No formation tendency data.</div>';
+    return;
+  }
+  el.innerHTML = `<div class="stack-list">${
+    stacks.map(s => `
+      <div class="stack-card">
+        <div class="stack-head">
+          <div>
+            <div class="stack-title">${s.formation}</div>
+            <div class="stack-sub">${s.plays} plays</div>
+          </div>
+          <div class="stack-sub">Expected family confidence</div>
+        </div>
+        ${s.bars.map(b => `
+          <div class="bar-row">
+            <span>${b.name}</span>
+            <div class="bar"><div class="fill" style="width:${Math.max(4, Math.min(100, b.freq))}%"></div></div>
+            <span>${fmtPct(b.freq)}</span>
+          </div>
+        `).join('')}
+        <div class="confidence-wrap">
+          <div class="confidence-label">
+            <span>Confidence meter</span>
+            <span>${s.confidenceLabel}</span>
+          </div>
+          <div class="confidence-meter"><div class="confidence-fill" style="width:${s.confidencePct}%"></div></div>
+        </div>
+      </div>
+    `).join('')
+  }</div>`;
+}
+
+
 function refreshDefense(){
   const defense = firstSelected('defSelect');
   const rows = filterRows(raw, {
@@ -1213,11 +1660,12 @@ function refreshDefense(){
     'PLAY TYPE': getSelectedValues('defPlayType'),
     FORMATION: getSelectedValues('defFormation'),
   });
-  renderHero(document.getElementById('defHero'), defense, 'Defense team view', 'Branding updates to the selected defense.');
   const all = calcMetrics(rows);
   const adv = byAdvantage(rows);
   const yes = calcMetrics(adv.yes);
   const no = calcMetrics(adv.no);
+
+  renderHero(document.getElementById('defHero'), defense, 'Defense team view', 'Branding updates to the selected defense.', [`${rows.length} plays`, `${fmtNum(all.ypp)} YPP allowed`, `${fmtPct(all.compPct)} comp`, `${fmtPct(pct(adv.yes.length, rows.length))} adv`]);
 
   renderKpis(document.getElementById('defKpis'), [
     {label:'Plays Faced', value: all.plays},
@@ -1240,18 +1688,123 @@ function refreshDefense(){
     ]
   );
 
+  // Formation vulnerability table (kept)
   const formRows = uniq(rows.map(r => r.FORMATION)).map(f => {
     const fr = rows.filter(r => r.FORMATION === f);
     const m = calcMetrics(fr);
     return [f, fr.length, fmtNum(m.ypp), fmtPct(m.compPct), fmtPct(pct(fr.filter(r => Number(r['NUM AD'])===1).length, fr.length))];
   }).sort((a,b) => parseFloat(b[2]) - parseFloat(a[2])).slice(0,15);
-
   renderTable(document.getElementById('defForms'),
     ['Formation','Plays','YPP','Comp %','With Adv Rate'],
     formRows
   );
-}
 
+  // Situation explorer
+  const situationModels = Object.entries(rows.reduce((acc,r)=>{
+    const situation = String(r.SITUATION || 'UNKNOWN').trim() || 'UNKNOWN';
+    (acc[situation] ||= []).push(r);
+    return acc;
+  }, {})).map(([situation, rs]) => {
+    const total = rs.length;
+    const ypp = rs.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(total || 1);
+
+    const typeBuckets = Object.entries(rs.reduce((acc,r)=>{
+      const t = String(r['PLAY TYPE'] || 'UNKNOWN').trim() || 'UNKNOWN';
+      (acc[t] ||= []).push(r);
+      return acc;
+    }, {}));
+
+    const expectedSorted = [...typeBuckets].sort((a,b)=>b[1].length-a[1].length);
+    const expected = expectedSorted[0]
+      ? {
+          name: expectedSorted[0][0],
+          freq: pct(expectedSorted[0][1].length, total),
+          ypp: expectedSorted[0][1].reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(expectedSorted[0][1].length||1)
+        }
+      : null;
+
+    const alertSorted = typeBuckets
+      .filter(([name]) => !expected || name !== expected.name)
+      .map(([name, tr]) => ({
+        name,
+        freq: pct(tr.length, total),
+        ypp: tr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(tr.length||1)
+      }))
+      .sort((a,b)=>b.ypp-a.ypp);
+
+    const formations = Object.entries(rs.reduce((acc,r)=>{
+      const f = String(r.FORMATION || 'UNKNOWN').trim() || 'UNKNOWN';
+      (acc[f] ||= []).push(r);
+      return acc;
+    }, {})).map(([name, fr]) => ({
+      name,
+      plays: fr.length,
+      freq: pct(fr.length, total),
+      ypp: fr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(fr.length||1)
+    })).sort((a,b)=>b.freq-a.freq).slice(0,5);
+
+    const playTypes = typeBuckets.map(([name, tr]) => ({
+      name,
+      plays: tr.length,
+      freq: pct(tr.length, total),
+      ypp: tr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(tr.length||1)
+    })).sort((a,b)=>b.freq-a.freq).slice(0,5);
+
+    const concepts = Object.entries(rs.reduce((acc,r)=>{
+      const concept = `${String(r.FORMATION || 'UNK').trim() || 'UNK'} • ${String(r['PLAY TYPE'] || 'UNKNOWN').trim() || 'UNKNOWN'}`;
+      (acc[concept] ||= []).push(r);
+      return acc;
+    }, {})).map(([name, cr]) => ({
+      name,
+      plays: cr.length,
+      ypp: cr.reduce((s,r)=>s+(Number(r.YARDS)||0),0)/(cr.length||1)
+    })).sort((a,b)=>b.ypp-a.ypp).slice(0,5);
+
+    return {
+      situation,
+      plays: total,
+      ypp,
+      expected,
+      alert1: alertSorted[0] || null,
+      aware: alertSorted[1] || null,
+      alert3: alertSorted[2] || null,
+      formations,
+      playTypes,
+      concepts
+    };
+  }).sort((a,b)=>{
+      const keyDiff = situationSortKey(a.situation) - situationSortKey(b.situation);
+      if(keyDiff !== 0) return keyDiff;
+      return b.plays - a.plays;
+    }).slice(0,10);
+
+  renderSituationExplorer(document.getElementById('defSituations'), situationModels);
+
+  // Formation visual stack + confidence meter
+  const stackData = Object.entries(rows.reduce((acc,r)=>{
+    const f = String(r.FORMATION || 'UNKNOWN').trim() || 'UNKNOWN';
+    (acc[f] ||= []).push(r);
+    return acc;
+  }, {})).sort((a,b)=>b[1].length-a[1].length).slice(0,3).map(([formation, fr])=>{
+    const total = fr.length;
+    const typeStats = Object.entries(fr.reduce((acc,r)=>{
+      const t = String(r['PLAY TYPE'] || 'UNKNOWN').trim() || 'UNKNOWN';
+      acc[t] = (acc[t] || 0) + 1;
+      return acc;
+    }, {})).sort((a,b)=>b[1]-a[1]);
+    const bars = typeStats.slice(0,3).map(([name, n]) => ({ name, freq: pct(n, total) }));
+    while(bars.length < 3) bars.push({name:'—', freq:0});
+    const top = bars[0]?.freq || 0;
+    const second = bars[1]?.freq || 0;
+    const gap = Math.max(0, top - second);
+    let confidenceLabel = 'LOW';
+    if(gap >= 20) confidenceLabel = 'HIGH';
+    else if(gap >= 10) confidenceLabel = 'MEDIUM';
+    const confidencePct = Math.max(10, Math.min(100, gap * 3.5));
+    return { formation, plays: total, bars, confidenceLabel, confidencePct };
+  });
+  renderFormationVisualStack(document.getElementById('defExpected'), stackData);
+}
 function refreshOffense(){
   const offense = firstSelected('offSelect');
   const rows = filterRows(raw, {
