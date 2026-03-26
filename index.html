@@ -1371,6 +1371,32 @@ function getSelectedValues(elOrId){
 function firstSelected(elOrId){
   return getSelectedValues(elOrId).find(v => v !== 'ALL') || 'ALL';
 }
+
+function wireAllExclusiveSelect(id){
+  const el = document.getElementById(id);
+  if(!el || el.dataset.allExclusiveBound === '1') return;
+  el.dataset.allExclusiveBound = '1';
+  el.addEventListener('change', () => {
+    const opts = [...el.options];
+    const allOpt = opts.find(o => o.value === 'ALL');
+    if(!allOpt) return;
+
+    const selectedNonAll = opts.filter(o => o.value !== 'ALL' && o.selected);
+
+    if(selectedNonAll.length > 0){
+      allOpt.selected = false;
+    } else {
+      allOpt.selected = true;
+    }
+
+    if(allOpt.selected){
+      opts.forEach(o => {
+        if(o.value !== 'ALL') o.selected = false;
+      });
+    }
+  });
+}
+
 function fillSelect(id, values, includeAll=true){
   const el = document.getElementById(id);
   const current = getSelectedValues(el);
@@ -1404,8 +1430,9 @@ function fillSelect(id, values, includeAll=true){
   current.forEach(v => {
     const opt = [...el.options].find(o => o.value === v);
     if(opt) opt.selected = true;
-  });
+  });  wireAllExclusiveSelect(id);
 }
+
 function filterRows(rows, filters){
   return rows.filter(r => Object.entries(filters).every(([k,v]) => {
     const vals = Array.isArray(v) ? v : [v];
